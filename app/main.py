@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from .db import ShortenedUrl, get_db_session
 from .service import create_short_link
 
-app = FastAPI()
+fastapi_app = FastAPI()
 
 CORS_ORIGINS = json.loads(os.getenv("CORS_ORIGINS", "[]"))
 DEFAULT_ORIGINS = [
@@ -32,7 +32,7 @@ def get_allowed_origins(origins_: list[str]) -> Generator[str]:
         yield origin
 
 
-app.add_middleware(
+fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=list(get_allowed_origins(CORS_ORIGINS or DEFAULT_ORIGINS)),
     allow_credentials=True,
@@ -41,7 +41,7 @@ app.add_middleware(
 )
 
 
-@app.post("/api/shorten")
+@fastapi_app.post("/api/shorten")
 def get_short_link(
     db: Session = Depends(get_db_session), url: HttpUrl = Body(..., embed=True)
 ):
@@ -55,7 +55,7 @@ def get_short_link(
     return {"short_link": short_link}
 
 
-@app.get("/{short_link}")
+@fastapi_app.get("/{short_link}")
 def redirect(short_link: str, db: Session = Depends(get_db_session)):
     obj = (
         db.query(ShortenedUrl)
