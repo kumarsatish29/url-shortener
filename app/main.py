@@ -1,14 +1,44 @@
+import json
+import os
+from collections.abc import Generator
 from datetime import datetime, timezone
 
 from fastapi import Body, Depends, FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 from pydantic import HttpUrl
+from starlette.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from .db import ShortenedUrl, get_db_session
 from .service import create_short_link
 
 app = FastAPI()
+
+CORS_ORIGINS = json.loads(os.getenv("CORS_ORIGINS", "[]"))
+DEFAULT_ORIGINS = [
+    "http://localhost:8000",
+    "http://localhost:8001",
+]
+
+
+def get_allowed_origins(origins_: list[str]) -> Generator[str]:
+    """
+    Returns domain with and without trailing slash
+    """
+    for origin in filter(lambda x: x, origins_):
+        if origin.endswith("/"):
+            origin = origin[:-1]
+        yield origin + "/"
+        yield origin
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=list(get_allowed_origins(CORS_ORIGINS or DEFAULT_ORIGINS)),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.post("/api/shorten")
